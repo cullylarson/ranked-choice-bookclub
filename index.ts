@@ -18,34 +18,12 @@ function checkVotes(books: string[], votes: string[][]) {
   };
 }
 
-function runVote({
-  books,
-  votes,
-  exclude = [],
-}: {
-  books: string[];
-  votes: string[][];
-  exclude?: string[];
-}) {
-  const booksFinal = books.filter((book) => !exclude.includes(book));
-  const votesFinal = votes.map((vote) =>
-    vote.filter((book) => !exclude.includes(book))
-  );
-
-  const checkResult = checkVotes(booksFinal, votesFinal);
-  if (!checkResult.valid) {
-    throw Error(
-      `Check failed after excluding (${exclude.join(" | ")}): ${
-        checkResult.message
-      }`
-    );
-  }
-
+function runVote(books: string[], votes: string[][]) {
   const voteController = new VoteController(
-    booksFinal.map((name) => new VoteOption(name))
+    books.map((name) => new VoteOption(name))
   );
 
-  for (const vote of votesFinal) {
+  for (const vote of votes) {
     voteController.acceptUserVotes(new UserVotes(vote));
   }
 
@@ -60,24 +38,60 @@ function runVote({
   }
 }
 
-function getResults() {
-  const NUM_RESULTS = 3;
+function excludeBooks({
+  books,
+  votes,
+  exclude,
+}: {
+  books: string[];
+  votes: string[][];
+  exclude: string[];
+}) {
+  const booksFiltered = books.filter((book) => !exclude.includes(book));
+  const votesFiltered = votes.map((vote) =>
+    vote.filter((book) => !exclude.includes(book))
+  );
 
-  let booksToExclude: string[] = [];
-  for (let i = 0; i < NUM_RESULTS; i++) {
-    const winners = runVote({ books, votes, exclude: booksToExclude });
+  if (booksFiltered.length === 0) {
+    throw Error(`No books left after excluding (${exclude.join(" | ")}).`);
+  }
+
+  const checkResult = checkVotes(booksFiltered, votesFiltered);
+  if (!checkResult.valid) {
+    throw Error(
+      `Check failed after excluding (${exclude.join(" | ")}): ${
+        checkResult.message
+      }`
+    );
+  }
+
+  return {
+    books: booksFiltered,
+    votes: votesFiltered,
+  };
+}
+
+function printResults(numResults: number) {
+  let excludedBooks: string[] = [];
+  for (let i = 0; i < numResults; i++) {
+    const { books: booksFinal, votes: votesFinal } = excludeBooks({
+      books,
+      votes,
+      exclude: excludedBooks,
+    });
+
+    const winners = runVote(booksFinal, votesFinal);
 
     if (winners.length > 1) {
-      console.log(`Tie: ${winners.join(", ")}`);
-      throw Error("Tie");
+      throw Error(`Tie: ${winners.join(", ")}`);
     }
 
     const winner = winners[0];
 
     console.log(`${i + 1}. ${winner}`);
 
-    booksToExclude.push(winner);
+    excludedBooks.push(winner);
   }
 }
 
-getResults();
+printResults(3);
