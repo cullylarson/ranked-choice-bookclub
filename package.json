@@ -1,0 +1,14 @@
+{
+  "name": "ranked-choice-bookclub",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "ranked-voting": "^0.0.4"
+  }
+}
