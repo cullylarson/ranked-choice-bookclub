@@ -1,5 +1,5 @@
 import { UserVotes, VoteOption, VoteController } from "ranked-voting";
-import { books, votes } from "./collections/bookclub-2";
+import { books, votes } from "./collections/bookclub-3";
 
 function checkVotes(books: string[], votes: string[][]) {
   for (const vote of votes) {
