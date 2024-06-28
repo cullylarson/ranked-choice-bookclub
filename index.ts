@@ -1,4 +1,9 @@
-import { UserVotes, VoteOption, VoteController } from "ranked-voting";
+import {
+  UserVotes,
+  VoteOption,
+  VoteController,
+  FinalResult,
+} from "ranked-voting";
 import { books, votes } from "./collections/bookclub-3";
 
 function checkVotes(books: string[], votes: string[][]) {
@@ -18,6 +23,43 @@ function checkVotes(books: string[], votes: string[][]) {
   };
 }
 
+// scores a book based on its position in each user's vote
+function getWeightedScore(book: string, votes: string[][]) {
+  return votes.reduce((totalScore, vote) => {
+    const position = vote.indexOf(book);
+
+    if (position === -1) {
+      return totalScore;
+    }
+
+    const numBooks = vote.length;
+
+    // first position (0) with 10 books would produce a (10/10)
+    // second position (1) with 10 books would produce a (9/10)
+    // last position (9) with 10 books would produce a (1/10)
+    const score = (numBooks - position) / numBooks;
+
+    return score + totalScore;
+  }, 0);
+}
+
+// break the tie by considering where each book was positioned in each user's vote
+function breakTie(tieOptions: string[], votes: string[][]) {
+  const winningBook = tieOptions
+    .map((book) => ({
+      book,
+      score: getWeightedScore(book, votes),
+    }))
+    .toSorted((a, b) => b.score - a.score)
+    .at(0)?.book;
+
+  if (!winningBook) {
+    throw Error("No winning book found in tiebreaker.");
+  }
+
+  return winningBook;
+}
+
 function runVote(books: string[], votes: string[][]) {
   const voteController = new VoteController(
     books.map((name) => new VoteOption(name))
@@ -30,11 +72,11 @@ function runVote(books: string[], votes: string[][]) {
   const result = voteController.getFinalResult();
 
   if (result.winner !== null) {
-    return [result.winner];
+    return result.winner;
   } else if (!result.tieOptions || result.tieOptions.length === 0) {
     throw Error("No tie options.");
   } else {
-    return result.tieOptions;
+    return breakTie(result.tieOptions, votes);
   }
 }
 
@@ -80,13 +122,7 @@ function printResults(numResults: number) {
       exclude: excludedBooks,
     });
 
-    const winners = runVote(booksFinal, votesFinal);
-
-    if (winners.length > 1) {
-      throw Error(`Tie: ${winners.join(", ")}`);
-    }
-
-    const winner = winners[0];
+    const winner = runVote(booksFinal, votesFinal);
 
     console.log(`${i + 1}. ${winner}`);
 
