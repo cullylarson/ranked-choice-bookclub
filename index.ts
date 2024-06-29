@@ -1,12 +1,24 @@
-import {
-  UserVotes,
-  VoteOption,
-  VoteController,
-  FinalResult,
-} from "ranked-voting";
+import { UserVotes, VoteOption, VoteController } from "ranked-voting";
 import { books, votes } from "./collections/bookclub-3";
 
-function checkVotes(books: string[], votes: string[][]) {
+type Brand<K, T> = K & { __brand: T };
+
+type Book = Brand<string, "book">;
+type Vote = Book[];
+
+function stringsToBooks(xs: string[]): Book[] {
+  return xs as Book[];
+}
+
+function stringToBook(x: string): Book {
+  return x as Book;
+}
+
+function stringArraysToVotes(xss: string[][]): Vote[] {
+  return xss as Vote[];
+}
+
+function checkVotes(books: Book[], votes: Vote[]) {
   for (const vote of votes) {
     for (const book of vote) {
       if (!books.includes(book)) {
@@ -24,7 +36,7 @@ function checkVotes(books: string[], votes: string[][]) {
 }
 
 // scores a book based on its position in a single user's vote
-function getBreakTieScoreForVote(book: string, vote: string[]) {
+function getBreakTieScoreForVote(book: Book, vote: Vote) {
   const position = vote.indexOf(book);
 
   if (position === -1) {
@@ -40,7 +52,7 @@ function getBreakTieScoreForVote(book: string, vote: string[]) {
 }
 
 // scores a book based on its position in each user's vote
-function getBreakTieScoreForBook(book: string, votes: string[][]) {
+function getBreakTieScoreForBook(book: Book, votes: Vote[]) {
   const totalScore = votes.reduce((totalScore, vote) => {
     const score = getBreakTieScoreForVote(book, vote);
 
@@ -51,7 +63,7 @@ function getBreakTieScoreForBook(book: string, votes: string[][]) {
 }
 
 // break the tie by considering where each book was positioned in each user's vote
-function breakTie(tieOptions: string[], votes: string[][]) {
+function breakTie(tieOptions: Book[], votes: Vote[]) {
   const winningBook = tieOptions
     .map((book) => ({
       book,
@@ -67,7 +79,7 @@ function breakTie(tieOptions: string[], votes: string[][]) {
   return winningBook;
 }
 
-function runVote(books: string[], votes: string[][]) {
+function runVote(books: Book[], votes: Vote[]) {
   const voteController = new VoteController(
     books.map((name) => new VoteOption(name))
   );
@@ -79,11 +91,11 @@ function runVote(books: string[], votes: string[][]) {
   const result = voteController.getFinalResult();
 
   if (result.winner !== null) {
-    return result.winner;
+    return stringToBook(result.winner);
   } else if (!result.tieOptions || result.tieOptions.length === 0) {
     throw Error("No tie options.");
   } else {
-    return breakTie(result.tieOptions, votes);
+    return breakTie(stringsToBooks(result.tieOptions), votes);
   }
 }
 
@@ -92,9 +104,9 @@ function excludeBooks({
   votes,
   exclude,
 }: {
-  books: string[];
-  votes: string[][];
-  exclude: string[];
+  books: Book[];
+  votes: Vote[];
+  exclude: Book[];
 }) {
   const booksFiltered = books.filter((book) => !exclude.includes(book));
   const votesFiltered = votes.map((vote) =>
@@ -121,11 +133,12 @@ function excludeBooks({
 }
 
 function printResults(numResults: number) {
-  let excludedBooks: string[] = [];
+  let excludedBooks: Book[] = [];
+
   for (let i = 0; i < numResults; i++) {
     const { books: booksFinal, votes: votesFinal } = excludeBooks({
-      books,
-      votes,
+      books: stringsToBooks(books),
+      votes: stringArraysToVotes(votes),
       exclude: excludedBooks,
     });
 
