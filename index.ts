@@ -23,24 +23,31 @@ function checkVotes(books: string[], votes: string[][]) {
   };
 }
 
+// scores a book based on its position in a single user's vote
+function getBreakTieScoreForVote(book: string, vote: string[]) {
+  const position = vote.indexOf(book);
+
+  if (position === -1) {
+    return 0;
+  }
+
+  const numBooks = vote.length;
+
+  // first position (0) with 10 books would produce a (10/10)
+  // second position (1) with 10 books would produce a (9/10)
+  // last position (9) with 10 books would produce a (1/10)
+  return (numBooks - position) / numBooks;
+}
+
 // scores a book based on its position in each user's vote
-function getWeightedScore(book: string, votes: string[][]) {
-  return votes.reduce((totalScore, vote) => {
-    const position = vote.indexOf(book);
-
-    if (position === -1) {
-      return totalScore;
-    }
-
-    const numBooks = vote.length;
-
-    // first position (0) with 10 books would produce a (10/10)
-    // second position (1) with 10 books would produce a (9/10)
-    // last position (9) with 10 books would produce a (1/10)
-    const score = (numBooks - position) / numBooks;
+function getBreakTieScoreForBook(book: string, votes: string[][]) {
+  const totalScore = votes.reduce((totalScore, vote) => {
+    const score = getBreakTieScoreForVote(book, vote);
 
     return score + totalScore;
   }, 0);
+
+  return totalScore / votes.length;
 }
 
 // break the tie by considering where each book was positioned in each user's vote
@@ -48,7 +55,7 @@ function breakTie(tieOptions: string[], votes: string[][]) {
   const winningBook = tieOptions
     .map((book) => ({
       book,
-      score: getWeightedScore(book, votes),
+      score: getBreakTieScoreForBook(book, votes),
     }))
     .toSorted((a, b) => b.score - a.score)
     .at(0)?.book;
