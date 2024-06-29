@@ -4,7 +4,7 @@ import { books, votes } from "./collections/bookclub-3";
 type Brand<K, T> = K & { __brand: T };
 
 type Book = Brand<string, "book">;
-type Vote = Book[];
+type Vote = Brand<Book[], "vote">;
 
 function stringsToBooks(xs: string[]): Book[] {
   return xs as Book[];
@@ -16,6 +16,10 @@ function stringToBook(x: string): Book {
 
 function stringArraysToVotes(xss: string[][]): Vote[] {
   return xss as Vote[];
+}
+
+function bookArrayToVote(xs: Book[]): Vote {
+  return xs as Vote;
 }
 
 function checkVotes(books: Book[], votes: Vote[]) {
@@ -110,7 +114,7 @@ function excludeBooks({
 }) {
   const booksFiltered = books.filter((book) => !exclude.includes(book));
   const votesFiltered = votes.map((vote) =>
-    vote.filter((book) => !exclude.includes(book))
+    bookArrayToVote(vote.filter((book) => !exclude.includes(book)))
   );
 
   if (booksFiltered.length === 0) {
