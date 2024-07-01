@@ -67,20 +67,28 @@ function getBreakTieScoreForBook(book: Book, votes: Vote[]) {
 }
 
 // break the tie by considering where each book was positioned in each user's vote
-function breakTie(tieOptions: Book[], votes: Vote[]) {
-  const winningBook = tieOptions
+function breakTie(tieOptions: Book[], votes: Vote[]): Book {
+  const booksSortedByScore = tieOptions
     .map((book) => ({
       book,
       score: getBreakTieScoreForBook(book, votes),
     }))
-    .toSorted((a, b) => b.score - a.score)
-    .at(0)?.book;
+    .toSorted((a, b) => b.score - a.score);
 
-  if (!winningBook) {
+  const maybeWinner = booksSortedByScore[0];
+
+  if (!maybeWinner) {
     throw Error("No winning book found in tiebreaker.");
   }
 
-  return winningBook;
+  if (
+    // toFixed so we can compare without any weird JS floating point issues
+    maybeWinner.score.toFixed(5) === booksSortedByScore[1]?.score.toFixed(5)
+  ) {
+    throw Error("Tiebreaker did not break the tie.");
+  }
+
+  return maybeWinner.book;
 }
 
 function runVote(books: Book[], votes: Vote[]) {
