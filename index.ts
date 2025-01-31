@@ -1,5 +1,5 @@
 import { UserVotes, VoteOption, VoteController } from "ranked-voting";
-import { books, votes } from "./collections/bookclub-3";
+import { books, votes } from "./collections/bookclub-5";
 
 type Brand<K, T> = K & { __brand: T };
 
